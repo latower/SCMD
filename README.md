@@ -3,9 +3,9 @@ Propagation algorithm for Stochastic Constraints on Monotonic Distributions (SCM
 
 ## Contents of this repository
 In this repository we provide:
-- the `Scala` implementation of our SCMD propagation algorithm
-- the files needed to convert ProbLog programs into OBDDs that serve as input for the SCMD propagation algorithm
-- figures with results as presented in our paper, and additional results
+- the `Scala` implementation of our SCMD propagation algorithm;
+- figures with results as presented in our paper, and additional results;
+- some of the test files needed to reproduce our results (based on license/availability).
 
 ## Prerequisites and dependencies
 You need the following pieces of software for building and running the code in this repository:
@@ -13,8 +13,8 @@ You need the following pieces of software for building and running the code in t
 - [sbt-naive-packager](https://github.com/sbt/sbt-native-packager) for building the SCMD propagator files
 - [Scala 2.12](https://github.com/scala/scala/releases/tag/v2.12.4)
 - [CoverSize](https://sites.uclouvain.be/cp4dm/fim/) constraint for FIM problem setting
-- Python 3.6
-- [dd 0.5.4](https://pypi.org/project/dd/) for OBDD compilation
+<!-- - Python 3.6 -->
+<!-- - [dd 0.5.4](https://pypi.org/project/dd/) for OBDD compilation -->
 
 TODO
 
@@ -25,43 +25,13 @@ $ sbt pack
 ```
 
 ## Usage
-We provide scripts for generating OBDDs from ProbLog files and have varying support for the different versions of our algorithm.
+<!-- We provide scripts for generating OBDDs from ProbLog files and have varying support for the different versions of our algorithm.
 
 ### From ProbLog to OBDD
 Example ProbLog program (example from paper):
-```
-% Deterministic facts
-person(a).
-person(b).
-person(c).
-person(e).
 
-% Probabilistic facts
-0.4::trusts_directed(a,b).
-0.8::trusts_directed(a,c).
-0.1::trusts_directed(b,c).
-0.3::trusts_directed(c,e).
 
-0.2::buy_from_marketing(_).
-
-% Decisions
-?::marketed(P) :- person(P).
-
-% Rules and relations
-trusts(X,Y) :- trusts_directed(X,Y).
-trusts(X,Y) :- trusts_directed(Y,X).
-
-buys(X) :- marketed(X), buy_from_marketing(X).
-buys(X) :- trusts(X,Y), buys(Y).
-
-% Queries
-query(buys(a)).
-query(buys(b)).
-query(buys(c)).
-query(buys(e)).
-```
-
-TODO
+TODO -->
 
 ### Sub-linear SCMD propagator
 For the _sub-linear_ propagator we support the following problem settings:
@@ -98,14 +68,32 @@ For the _linear_ propagator we support only the `ME` problem setting and only th
 $ ./SCMD-propagator/target/pack/bin/runner-max-prob-sub-linear [OBDD_File] [constraint_threshold]
 ```
 
-## Test data
-TODO
+<!-- ## Test data
+We make the following test data available in this repository: -->
+
+
+## More information
+Please contact us if you are looking for the following files:
+- scripts for generating OBDDs from ProbLog programs;
+- code for generating GAC-guaranteeing MIP encoding of Stochastic Constraint Optimisation Problems (SCOPs) and Stochastic Constraint Problems on Monotonic Distributions (SCMDs);
+- benchmarking scripts.
 
 ## License
-TODO
+The propagation algorithm for the Stochastic Constraint on Monotonic Distributions (SCMD) in [./SCMD-propagator/src/main/scala/](https://github.com/latower/SCMD/blob/master/SCMD-propagator/src/main/scala/) is licensed under the [MIT license](https://github.com/latower/SCMD/blob/master/LICENSE_SCMD).
+
+We provide `ProbLog` and `OBDD` files for power transmission network models in:
+- [./testfiles/problog/pgr-eu](https://github.com/latower/SCMD/blob/master/testfiles/problog/pgr-eu),
+- [./testfiles/problog/pgr-na](https://github.com/latower/SCMD/blob/master/testfiles/problog/pgr-na),
+- [./testfiles/obdds/big/pgr-eu](https://github.com/latower/SCMD/blob/master/testfiles/obdds/big/pgr-eu),
+- [./testfiles/obdds/big/pgr-na](https://github.com/latower/SCMD/blob/master/testfiles/obdds/big/pgr-na),
+- [./testfiles/obdds/minimized/pgr-eu](https://github.com/latower/SCMD/blob/master/testfiles/obdds/minimized/pgr-eu), and
+- [./testfiles/obdds/minimized/pgr-na](https://github.com/latower/SCMD/blob/master/testfiles/obdds/minimized/pgr-na),
+
+which are state- or country-level connected components extracted from [GridKit: European and North-American extracts](https://zenodo.org/record/47317#.XT9FWlyZZhH), available under the [Open Database License (ODbL) version 1.0](https://github.com/latower/SCMD/blob/master/LICENSE_GridKit).
+> Wiegmans, B. (2016). GridKit: European and North-American extracts [Data set]. Zenodo. http://doi.org/10.5281/zenodo.47317
 
 ## Contributors
-The code in this repository is written by 
+The code in this repository is written and maintained by 
 - Behrouz Babaki (@Behrouz-Babaki)
-- Anna Louise Latour (@latower)
 - Siegfried Nijssen (@siegfriednijssen)
+- Anna Louise Latour (@latower)
