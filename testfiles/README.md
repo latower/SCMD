@@ -1,7 +1,5 @@
 # Problems and input files
-We describe the problem settings and datasets underlying the test files in this directory.
-
-For license information of the datasets described here, see `SCMD/LICENSE`.
+We describe the problem settings and datasets (and their licenses) underlying the test files in this directory.
 
 ## Problem descriptions
 We give short descriptions of the underlying problems, and provide examples of how these are encoded in [ProbLog](https://bitbucket.org/problog/problog/src/).
