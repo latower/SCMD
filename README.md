@@ -79,7 +79,7 @@ Please contact us if you are looking for the following files:
 - benchmarking scripts.
 
 ## License
-The propagation algorithm for the Stochastic Constraint on Monotonic Distributions (SCMD) in [./SCMD-propagator/src/main/scala/](https://github.com/latower/SCMD/blob/master/SCMD-propagator/src/main/scala/) is licensed under the [MIT license](https://github.com/latower/SCMD/blob/master/LICENSE_SCMD).
+The propagation algorithm for the Stochastic Constraint on Monotonic Distributions (SCMD) in [./SCMD-propagator/src/main/scala/](https://github.com/latower/SCMD/blob/master/SCMD-propagator/src/main/scala/) is licensed under the [MIT license](https://github.com/latower/SCMD/blob/master/LICENSE).
 
 We provide `ProbLog` and `OBDD` files for power transmission network models in:
 - [./testfiles/problog/pgr-eu](https://github.com/latower/SCMD/blob/master/testfiles/problog/pgr-eu),
