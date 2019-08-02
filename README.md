@@ -79,6 +79,6 @@ which are state- or country-level connected components extracted from [GridKit: 
 
 ## Contributors
 The code in this repository is written and maintained by 
-- Behrouz Babaki (@Behrouz-Babaki)
-- Siegfried Nijssen (@siegfriednijssen)
-- Anna Louise Latour (@latower)
+- Behrouz Babaki ([@Behrouz-Babaki](https://github.com/Behrouz-Babaki))
+- Siegfried Nijssen ([@siegfriednijssen](https://github.com/siegfriednijssen))
+- Anna Louise Latour ([@latower](https://github.com/latower))
