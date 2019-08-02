@@ -13,10 +13,6 @@ You need the following pieces of software for building and running the code in t
 - [sbt-naive-packager](https://github.com/sbt/sbt-native-packager) for building the SCMD propagator files
 - [Scala 2.12](https://github.com/scala/scala/releases/tag/v2.12.4)
 - [CoverSize](https://sites.uclouvain.be/cp4dm/fim/) constraint for FIM problem setting
-<!-- - Python 3.6 -->
-<!-- - [dd 0.5.4](https://pypi.org/project/dd/) for OBDD compilation -->
-
-TODO
 
 ## Building
 In order to build the binaries for the SCMD propagator, go to the ``SCMD-propagator`` subdirectory and run
@@ -25,13 +21,6 @@ $ sbt pack
 ```
 
 ## Usage
-<!-- We provide scripts for generating OBDDs from ProbLog files and have varying support for the different versions of our algorithm.
-
-### From ProbLog to OBDD
-Example ProbLog program (example from paper):
-
-
-TODO -->
 
 ### Sub-linear SCMD propagator
 For the _sub-linear_ propagator we support the following problem settings:
@@ -67,10 +56,6 @@ For the _linear_ propagator we support only the `ME` problem setting and only th
 ```
 $ ./SCMD-propagator/target/pack/bin/runner-max-prob-sub-linear [OBDD_File] [constraint_threshold]
 ```
-
-<!-- ## Test data
-We make the following test data available in this repository: -->
-
 
 ## More information
 Please contact us if you are looking for the following files:
