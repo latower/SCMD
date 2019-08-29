@@ -52,9 +52,9 @@ $ ./SCMD-propagator/target/pack/bin/run FIM --bdd-file [OBDD_file] --db-file [db
 ```
 
 ### Linear SCMD propagator
-For the _linear_ propagator we support only the `ME` problem setting and only the default branching, and no tracing or verbosity:
+For the _linear_ propagator we support only the `ME` problem setting, and no tracing or verbosity:
 ```
-$ ./SCMD-propagator/target/pack/bin/runner-max-prob-sub-linear [OBDD_File] [constraint_threshold]
+$ ./SCMD-propagator/target/pack/bin/runner-max-exp-linear --bdd-file [OBDD_File] --max-card [constraint_threshold]
 ```
 
 ## More information
