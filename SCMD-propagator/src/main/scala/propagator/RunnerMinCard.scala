@@ -1,18 +1,3 @@
-/**
-  * ----------------------------------------------------------------------------
-  * SCMD : Stochastic Constraint on Monotonic Distributions
-  *
-  * @author Behrouz Babaki behrouz.babaki@polymtl.ca
-  * @author Siegfried Nijssen siegfried.nijssen@uclouvain.be
-  * @author Anna Louise Latour a.l.d.latour@liacs.leidenuniv.nl
-  *         
-  *         Relevant paper: Stochastic Constraint Propagation for Mining 
-  *         Probabilistic Networks, IJCAI 2019
-  *
-  *         Licensed under MIT (https://github.com/latower/SCMD/blob/master/LICENSE_SCMD).
-  * ----------------------------------------------------------------------------
-  */
-  
 package propagator
 
 import oscar.cp._
@@ -23,17 +8,12 @@ object RunnerMinCard extends App with CPModel {
   val bdd = new Wbdd(args(0))
   val threshold = args(1).toDouble
 
-  var traceFile: String = ""
-  if (args.length > 2) {
-    traceFile = args(2)
-    bdd.printSortedIds(traceFile)
-  }
 
   val numberOfMaxVars = bdd.numberOfMaxVars
   val X = Array.fill(numberOfMaxVars)(CPBoolVar())
   val solution = Array.fill(numberOfMaxVars)(-1)
 
-  val wbddC = new WbddConstraint(bdd, X, threshold, traceFile)
+  val wbddC = new WbddConstraintPartial(bdd, X, threshold)
 
   try {
     minimize(sum(X))

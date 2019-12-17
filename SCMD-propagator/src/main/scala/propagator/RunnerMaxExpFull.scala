@@ -1,25 +1,10 @@
-/**
-  * ----------------------------------------------------------------------------
-  * SCMD : Stochastic Constraint on Monotonic Distributions
-  *
-  * @author Behrouz Babaki behrouz.babaki@polymtl.ca
-  * @author Siegfried Nijssen siegfried.nijssen@uclouvain.be
-  * @author Anna Louise Latour a.l.d.latour@liacs.leidenuniv.nl
-  *         
-  *         Relevant paper: Stochastic Constraint Propagation for Mining 
-  *         Probabilistic Networks, IJCAI 2019
-  *
-  *         Licensed under MIT (https://github.com/latower/SCMD/blob/master/LICENSE_SCMD).
-  * ----------------------------------------------------------------------------
-  */
-  
 package propagator
 
 import oscar.cp._
 import oscar.algo.Inconsistency
 import java.io.File
 
-object RunnerMaxExpMaxCard extends App with CPModel {
+object RunnerMaxExpFull extends App with CPModel {
 
   private[this] var numberOfMaxVars = -1;
   private[this] var solution: Array[Int] = null;
@@ -28,7 +13,7 @@ object RunnerMaxExpMaxCard extends App with CPModel {
   val parser = argsParser()
   parser.parse(args, Config()) match {
     case Some(config) =>
-      System.err.println("Start MaxExpMaxCard on " + config.bddFile.getAbsolutePath)
+      System.err.println("Start MaxExpFull on " + config.bddFile.getAbsolutePath)
 
       val bdd = new Wbdd(config.bddFile.getAbsolutePath)
       val card = config.maxcard
@@ -39,7 +24,7 @@ object RunnerMaxExpMaxCard extends App with CPModel {
       val X = Array.fill(numberOfMaxVars)(CPBoolVar())
       solution = Array.fill(numberOfMaxVars)(-1);
 
-      val wbddC = new WbddConstraintMaxCard(bdd, X, card, 0.0)
+      val wbddC = new WbddConstraintFull(bdd, X, 0.0)
 
       try {
         add(sum(X) <= card)
@@ -90,8 +75,8 @@ object RunnerMaxExpMaxCard extends App with CPModel {
   }
 
   def argsParser(): scopt.OptionParser[Config] = {
-    new scopt.OptionParser[Config]("MaxExpMaxCard") {
-      head("MaxExpMaxCard", "1.0")
+    new scopt.OptionParser[Config]("MaxExp") {
+      head("MaxExp", "1.0")
 
       opt[File]("bdd-file") required () valueName ("<file>") action { (x, c) => c.copy(bddFile = x)
       } validate { x =>
@@ -102,21 +87,21 @@ object RunnerMaxExpMaxCard extends App with CPModel {
         c.copy(maxcard = x)
       } validate { x =>
         if (x >= 0) success else failure("Value <maxcard> must be >= 0")
-      } text ("the maximum cardinality")
+      } text ("the maximum cardinality (positive integer)")
 
-      opt[String]("branching") optional () valueName ("<strategy>") action { (x, c) =>
+      opt[String]("branching") optional () valueName ("<heuristic>") action { (x, c) =>
         c.copy(branching = x)
       } validate { x =>
         if (List("top-zero", "top-one",
           "derivative-zero", "derivative-one",
-          "bottom-zero", "bottom-one") contains x) success else failure("unknown <strategy>")
-      } text ("variable/value selection strategy, default: top-zero")
+          "bottom-zero", "bottom-one") contains x) success else failure("unknown <heuristic>")
+      } text ("variable/value selection heuristic [top-zero, top-one, derivative-zero, derivative-one, bottom-zero, bottom-one], default: top-zero")
 
       opt[Unit]("verbose") abbr ("v") action { (_, c) =>
         c.copy(verbose = true)
       } text ("output all result with every details")
 
-      help("help") text ("Usage of Tester")
+      help("help") text ("Usage")
 
       override def showUsageOnError = true
     }

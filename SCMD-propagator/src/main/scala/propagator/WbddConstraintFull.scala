@@ -1,18 +1,3 @@
-/**
-  * ----------------------------------------------------------------------------
-  * SCMD : Stochastic Constraint on Monotonic Distributions
-  *
-  * @author Behrouz Babaki behrouz.babaki@polymtl.ca
-  * @author Siegfried Nijssen siegfried.nijssen@uclouvain.be
-  * @author Anna Louise Latour a.l.d.latour@liacs.leidenuniv.nl
-  *         
-  *         Relevant paper: Stochastic Constraint Propagation for Mining 
-  *         Probabilistic Networks, IJCAI 2019
-  *
-  *         Licensed under MIT (https://github.com/latower/SCMD/blob/master/LICENSE_SCMD).
-  * ----------------------------------------------------------------------------
-  */
-
 package propagator
 
 import oscar.cp.`package`.CPModel
@@ -32,7 +17,8 @@ import oscar.algo.reversible.ReversibleInt
 import scala.math.BigInt
 import java.math.MathContext
 
-class WbddConstraintLinear(val bdd: Wbdd, val X: Array[CPBoolVar], val P: Double)
+class WbddConstraintFull(val bdd: Wbdd, val X: Array[CPBoolVar],
+                         val P: Double)
   extends Constraint(X(0).store, "BddWmc") {
 
   override def associatedVars(): Iterable[CPVar] = X
@@ -40,6 +26,7 @@ class WbddConstraintLinear(val bdd: Wbdd, val X: Array[CPBoolVar], val P: Double
   var totalValue_ : Double = 0.0
   var numberOfCalls_ : BigInt = 0
   val derivatives = Array.fill[Double](bdd.numberOfMaxVars)(0)
+  val pathWeights = Array.fill[Double](bdd.numberOfNodes)(0.0)
 
   private[this] var bound = P
   idempotent = true
@@ -79,11 +66,12 @@ class WbddConstraintLinear(val bdd: Wbdd, val X: Array[CPBoolVar], val P: Double
       derivatives(i) = 0
       i += 1
     }
-    val pathWeights = Array.fill[Double](bdd.numberOfNodes)(0.0)
     for (i <- bdd.sortedNodes) {
-      if (bdd.parents(i).isEmpty)
+      if (bdd.roots.contains(i))
         pathWeights(i) = 1.0
-      else for (j <- 0 until bdd.parents(i).length) {
+      else
+        pathWeights(i) = 0.0
+      for (j <- 0 until bdd.parents(i).length) {
         val w: Double = {
           val parent = bdd.parents(i)(j)
           val (isDecision, cpVar) = bdd.getCpVarIndexForBddNode(parent)

@@ -1,25 +1,10 @@
-/**
-  * ----------------------------------------------------------------------------
-  * SCMD : Stochastic Constraint on Monotonic Distributions
-  *
-  * @author Behrouz Babaki behrouz.babaki@polymtl.ca
-  * @author Siegfried Nijssen siegfried.nijssen@uclouvain.be
-  * @author Anna Louise Latour a.l.d.latour@liacs.leidenuniv.nl
-  *         
-  *         Relevant paper: Stochastic Constraint Propagation for Mining 
-  *         Probabilistic Networks, IJCAI 2019
-  *
-  *         Licensed under MIT (https://github.com/latower/SCMD/blob/master/LICENSE_SCMD).
-  * ----------------------------------------------------------------------------
-  */
-  
 package propagator
 
 import oscar.cp._
 import oscar.algo.Inconsistency
 import java.io.File
 
-object RunnerMaxExpLinear extends App with CPModel {
+object RunnerMaxExpPartial extends App with CPModel {
 
   private[this] var numberOfMaxVars = -1;
   private[this] var solution: Array[Int] = null;
@@ -28,7 +13,7 @@ object RunnerMaxExpLinear extends App with CPModel {
   val parser = argsParser()
   parser.parse(args, Config()) match {
     case Some(config) =>
-      System.err.println("Start MaxExp on " + config.bddFile.getAbsolutePath)
+      System.err.println("Start MaxExpPartial on " + config.bddFile.getAbsolutePath)
 
       val bdd = new Wbdd(config.bddFile.getAbsolutePath)
       val card = config.maxcard
@@ -39,7 +24,7 @@ object RunnerMaxExpLinear extends App with CPModel {
       val X = Array.fill(numberOfMaxVars)(CPBoolVar())
       solution = Array.fill(numberOfMaxVars)(-1);
 
-      val wbddC = new WbddConstraintLinear(bdd, X, 0.0)
+      val wbddC = new WbddConstraintPartial(bdd, X, 0.0)
 
       try {
         add(sum(X) <= card)
@@ -111,16 +96,6 @@ object RunnerMaxExpLinear extends App with CPModel {
           "derivative-zero", "derivative-one",
           "bottom-zero", "bottom-one") contains x) success else failure("unknown <heuristic>")
       } text ("variable/value selection heuristic [top-zero, top-one, derivative-zero, derivative-one, bottom-zero, bottom-one], default: top-zero")
-
-      opt[File]("trace-file") optional () valueName ("<file>") action { (x, c) =>
-        c.copy(traceFile = x, collectTraces = true)
-      } validate { x =>
-        if (x.exists() || x.createNewFile()) success else failure("<trace File> can not be created")
-      } text ("collect the traces")
-
-      opt[Unit]("verbose") abbr ("v") action { (_, c) =>
-        c.copy(verbose = true)
-      } text ("output all result with every details")
 
       help("help") text ("Usage")
 

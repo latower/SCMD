@@ -1,48 +1,24 @@
-/**
-  * ----------------------------------------------------------------------------
-  * SCMD : Stochastic Constraint on Monotonic Distributions
-  *
-  * @author Behrouz Babaki behrouz.babaki@polymtl.ca
-  * @author Siegfried Nijssen siegfried.nijssen@uclouvain.be
-  * @author Anna Louise Latour a.l.d.latour@liacs.leidenuniv.nl
-  *         
-  *         Relevant paper: Stochastic Constraint Propagation for Mining 
-  *         Probabilistic Networks, IJCAI 2019
-  *
-  *         Licensed under MIT (https://github.com/latower/SCMD/blob/master/LICENSE_SCMD).
-  * ----------------------------------------------------------------------------
-  */
-
 package propagator
 
-import oscar.cp.`package`.CPModel
-import oscar.cp.core.variables.CPIntVar
-import oscar.cp.core.Constraint
-import oscar.cp.core.CPPropagStrength
-import oscar.cp.core.variables.CPVar
-import oscar.cp.add
-import oscar.cp.core.variables.CPBoolVar
-import oscar.algo.Inconsistency
-import scala.collection.mutable.PriorityQueue
-import scala.collection.mutable.ArrayBuffer
-import oscar.algo.reversible.ReversibleContext
-import oscar.algo.reversible.ReversibleDouble
-import oscar.algo.reversible.ReversibleBoolean
-import oscar.algo.reversible.ReversibleInt
-import scala.math.BigInt
-import java.io.PrintWriter
 import java.io.File
 import java.io.FileOutputStream
-  
-class WbddConstraint(val bdd: Wbdd, val X: Array[CPBoolVar],
-                     val P: Double, val traceFile: String = "")
-  extends Constraint(X(0).store, "BddWmc") {
+import java.io.PrintWriter
 
-  var pw: PrintWriter = null
-  var printTrace = false
-  if (traceFile != "") {
-    printTrace = true
-  }
+import scala.collection.mutable.PriorityQueue
+import scala.math.BigInt
+import scala.math.abs
+
+import oscar.algo.Inconsistency
+import oscar.algo.reversible.ReversibleDouble
+import oscar.algo.reversible.ReversibleInt
+import oscar.cp.core.CPPropagStrength
+import oscar.cp.core.Constraint
+import oscar.cp.core.variables.CPBoolVar
+import oscar.cp.core.variables.CPVar
+
+class WbddConstraintPartial(val bdd: Wbdd, val X: Array[CPBoolVar],
+                            val P: Double)
+  extends Constraint(X(0).store, "BddWmc") {
 
   object QueueOrdering extends Enumeration {
     type QueueOrdering = Value
@@ -175,11 +151,11 @@ class WbddConstraint(val bdd: Wbdd, val X: Array[CPBoolVar],
     }
 
     val pw = Array.fill[Double](bdd.numberOfNodes)(0)
+    for (i <- bdd.roots)
+      pw(i) = 1
     for (i <- bdd.sortedNodes) {
       var j: Int = 0
-      if (bdd.parents(i).isEmpty)
-        pw(i) = 1
-      else while (j < bdd.parents(i).length) {
+      while (j < bdd.parents(i).length) {
         val parent = bdd.parents(i)(j)
         val w: Double = {
           val (isDecision, cpVar) = bdd.getCpVarIndexForBddNode(parent)
@@ -367,6 +343,8 @@ class WbddConstraint(val bdd: Wbdd, val X: Array[CPBoolVar],
       val r = U.dequeue
       val oldValue = pathWeights(r).getValue
       var newValue = 0.0
+      if (bdd.roots.contains(r))
+        newValue = 1.0
 
       for (p <- bdd.parents(r)) {
         val w = {
@@ -407,10 +385,18 @@ class WbddConstraint(val bdd: Wbdd, val X: Array[CPBoolVar],
       val (isDecision, cpVarIndex) = bdd.getCpVarIndexForBddNode(r)
       if (isDecision && isRecentlyBound(cpVarIndex)) {
         val c = activeChild(r)
-        if (c >= 0 && freeOut(c).getValue > 0)
-          freeOut(r).setValue(1)
-        else
+        if (c >= 0) {
+          val (childIsDecision, childCpVarIndex) = bdd.getCpVarIndexForBddNode(c)
+          if (freeOut(c).getValue > 0 || (childIsDecision && !X(childCpVarIndex).isBound))
+            freeOut(r).setValue(1)
+          else
+            freeOut(r).setValue(0)
+        } else
           freeOut(r).setValue(0)
+        //         if (c >= 0 && (freeOut(c).getValue > 0 || (c >= 0 && childIsDecision && !X(childCpVarIndex).isBound)) )
+        //           freeOut(r).setValue(1)
+        //         else
+        //           freeOut(r).setValue(0)
       }
 
       if (freeOut(r).getValue == 0 && (!isDecision || X(cpVarIndex).isBound))
@@ -431,34 +417,53 @@ class WbddConstraint(val bdd: Wbdd, val X: Array[CPBoolVar],
         Q.enqueue(r)
     }
 
+    // get the nodes labelled with the variables that have recently been fixed,
+    // and which are still reachable and lead to nodes labelled with free
+    // decision variables
     val S = nodesForFixedVars.filter(n => reachable(n).getValue > 0 && freeOut(n).getValue > 0)
 
+    // for those nodes, update the values of the children and add those 
+    // children to the queue if necessary
     for (r <- S) {
       val a = activeChild(r)
       val i = activeChild(r, false)
 
+      // active child
       if (a >= 0 && freeIn(r).getValue == 0) {
         freeIn(a).decr
-        enqueueIfProp(a)
+        val (isDecision, cpVarIndex) = bdd.getCpVarIndexForBddNode(a)
+        if (!(isDecision && isRecentlyBound(cpVarIndex))) {
+        // if (!S.contains(a)) {
+          enqueueIfProp(a)
+        }
       }
-
+      // inactive child
       if (i >= 0) {
         freeIn(i).decr
         reachable(i).decr
-        enqueueIfProp(i)
+        val (isDecision, cpVarIndex) = bdd.getCpVarIndexForBddNode(i)
+        if (!(isDecision && isRecentlyBound(cpVarIndex))) {
+        // if (!S.contains(i)) {
+          enqueueIfProp(i)
+        }
       }
     }
 
     while (!Q.isEmpty) {
-      val r = Q.dequeue
-      if (reachable(r).getValue == 0) {
+      val r = Q.dequeue     // new root
+      
+      // if this root is no longer reachable, update the counters of the children 
+      // (if the arc from root to child is not removed)
+      if (reachable(r).getValue == 0) {   
         for (c <- List(loChild(r), hiChild(r)).filter(_ >= 0))
           if (!removed(r, c)) {
             freeIn(c).decr
             reachable(c).decr
             enqueueIfProp(c)
           }
-      } else {
+      } 
+      // else, if current root r is reachable
+      else {
         val (isDecision, cpVarIndex) = bdd.getCpVarIndexForBddNode(r)
         val isFreeVar = isDecision && !(X(cpVarIndex).isBound)
         if (freeIn(r).getValue == 0 && !isFreeVar)
@@ -472,53 +477,17 @@ class WbddConstraint(val bdd: Wbdd, val X: Array[CPBoolVar],
 
   }
 
-  def printState(): Unit = {
-    var i: Int = 0
-    while (i < X.length) {
-      val j = bdd.decMapCpToBdd(i)
-      val v = {
-        if (!X(i).isBound)
-          0
-        else if (X(i).isTrue) {
-          if (isRecentlyBound(i))
-            1
-          else if (isBoundByPropagation(i))
-            2
-          else
-            3
-        } else if (X(i).isFalse) {
-          if (isRecentlyBound(i))
-            4
-          else
-            5
-        }
-      }
-      pw.append(j + ":" + v + " ")
-      i += 1
-    }
-    pw.append("\n")
-  }
-
-  def collectTrace(): Unit = {
-    if (printTrace) {
-      pw = new PrintWriter(new FileOutputStream(new File(traceFile), true));
-      printStateInfo
-      pw.close
-    }
-  }
-
-  def printStateInfo(): Unit = {
-    printState
-    pw.append(totalValue_ + "\n")
-    pw.append(nodeValues.deep.mkString(" ") + "\n")
-    pw.append(pathWeights.deep.mkString(" ") + "\n")
-    pw.append(derivatives.deep.mkString(" ") + "\n")
-    pw.append(freeIn.deep.mkString(" ") + "\n")
-    pw.append(freeOut.deep.mkString(" ") + "\n")
-    pw.append(reachable.deep.mkString(" ") + "\n")
-  }
-
   def setBound(p: Double): Unit = { bound = p }
+
+  def AlmostEqualRelativeAndAbs(a: Double, b: Double,
+                                maxDiff: Double = 0.00000000001): Boolean = {
+
+    var diff: Double = abs(a - b)
+    if (diff <= maxDiff)
+      return true
+
+    return false
+  }
 
   override def propagate(): Unit = {
     numberOfCalls_ = numberOfCalls_ + 1
@@ -565,9 +534,6 @@ class WbddConstraint(val bdd: Wbdd, val X: Array[CPBoolVar],
     updateReachableFreeIn
     updateFreeOut
     freeVariableOffset.setValue(k2)
-
-    if (printTrace)
-      collectTrace
 
   }
 }

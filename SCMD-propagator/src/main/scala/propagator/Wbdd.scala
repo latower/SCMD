@@ -1,18 +1,3 @@
-/**
-  * ----------------------------------------------------------------------------
-  * SCMD : Stochastic Constraint on Monotonic Distributions
-  *
-  * @author Behrouz Babaki behrouz.babaki@polymtl.ca
-  * @author Siegfried Nijssen siegfried.nijssen@uclouvain.be
-  * @author Anna Louise Latour a.l.d.latour@liacs.leidenuniv.nl
-  *         
-  *         Relevant paper: Stochastic Constraint Propagation for Mining 
-  *         Probabilistic Networks, IJCAI 2019
-  *
-  *         Licensed under MIT (https://github.com/latower/SCMD/blob/master/LICENSE_SCMD).
-  * ----------------------------------------------------------------------------
-  */
-
 package propagator
 
 import scala.io.Source
@@ -29,7 +14,6 @@ class Wbdd(bddFileName: String) {
   val numberOfNodes: Int = nv(0)
   private[this] val numberOfVariables: Int = nv(1)
   val roots: Set[Int] = lines(1).split(" ").map(_.toInt).toSet
-
   private[this] val nodeInfo: List[List[Int]] = lines.slice(2, numberOfNodes + 2).map(_.trim()).map(_.split(" ").toList.map(_.toInt)).toList
 
   val nodeToVar: Array[Int] = nodeInfo.map(_.head).toArray
@@ -111,12 +95,6 @@ class Wbdd(bddFileName: String) {
 
   val isDecisionNode: Array[Boolean] = (0 until numberOfNodes).map(getCpVarIndexForBddNode(_)._1).toArray
   def getBddNodesForCpVarIndex(cpVar: Int): Array[Int] = varToNodes(decMapCpToBdd(cpVar))
-
-  def printSortedIds(traceFile: String) {
-    val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File(traceFile), false));
-    pw.write(positionInSorted.deep.mkString(" ") + "\n")
-    pw.close
-  }
 
   def print() = {
     println("number of nodes: " + numberOfNodes)
