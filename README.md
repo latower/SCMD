@@ -1,6 +1,8 @@
 # SCMD-propagator
 Propagation algorithm for Stochastic Constraints on Monotonic Distributions (SCMDs), as described in: _Stochastic Constraint Propagation for Mining Probabilistic Networks_, Anna Louise D. Latour, Behrouz Babaki, and Siegfried Nijssen, to appear at IJCAI 2019, Macao.
 
+version: 1.2
+
 ## Contents of this repository
 In this repository we provide:
 - the `Scala` implementation of our SCMD propagation algorithm;
@@ -22,10 +24,10 @@ $ sbt pack
 
 ## Usage
 
-### Sub-linear SCMD propagator
-For the _sub-linear_ propagator we support the following problem settings:
+### Partial-sweep SCMD propagator
+For the _partial-sweep_ propagator we support the following problem settings:
 - ME: maximize expected value with constraint on the cardinality of the solution (positive decisions)
-- MC: maximize cardinality of the solution (positive decisions) with constraint on the maximum expected value
+<!--- - MC: maximize cardinality of the solution (positive decisions) with constraint on the maximum expected value --->
 - FIM: Frequent Itemset Mining
 
 and the following branching heuristics:
@@ -38,23 +40,25 @@ and the following branching heuristics:
 
 We also support the collection of the search trace in a trace file and toggle detailed output during the search with the `-v` or `--verbose` flag.
 
-To use our SCMD propagator to solve an `ME` problem setting for which the probability distribution is encoded in `[OBDD_file]`, with upper bound on the cardinality of the positive decisions `[constraint_threshold]`, and branching heuristic `[heuristic]`, writing the trace to `[trace_file]` and printing the search details to the terminal, run:
+To use our partial-sweep SCMD propagator to solve an ME problem setting for which the probability distribution is encoded in `[OBDD_file]`, with upper bound on the cardinality of the positive decisions `[constraint_threshold]`, and branching heuristic `[heuristic]` and printing the search details to the terminal, run:
 ```
-$ ./SCMD-propagator/target/pack/bin/run ME --bdd-file [OBDD_file] --max-card [constraint_threshold] --branching [heuristic] --trace-file [trace_file] -v
+$ ./SCMD-propagator/target/pack/bin/run ME-P --bdd-file [OBDD_file] --max-card [constraint_threshold] --branching [heuristic] --verbose
 ```
+<!--- 
 We have less support for the `MC` problem setting: 
 ```
-$ ./SCMD-propagator/target/pack/bin/run MC [OBDD_file] [constraint_threshold]
+$ ./SCMD-propagator/target/pack/bin/run MC-P [OBDD_file] [constraint_threshold]
 ```
+
 For the `FIM` problem setting we support the same branching heuristics, tracing and verbose functionality as for the `ME` problem setting. However, because of the nature of the frequent itemset mining problem, we do not have a cardinality constraint on the positive decisions, but we do need to specify a database with transactions `[db_file]`, a minimum required expected value `[minexp]` and a minimum support `[minsup]`, e.g.:
 ```
 $ ./SCMD-propagator/target/pack/bin/run FIM --bdd-file [OBDD_file] --db-file [db_file] --min-exp [minexp] --min-sup [minsup] --branching [heuristic] --trace-file [trace_file] -v
 ```
-
-### Linear SCMD propagator
-For the _linear_ propagator we support only the `ME` problem setting, and no tracing or verbosity:
+--->
+### Full-sweep SCMD propagator
+For the _full-sweep_ propagator we support only the `ME` problem setting:
 ```
-$ ./SCMD-propagator/target/pack/bin/runner-max-exp-linear --bdd-file [OBDD_File] --max-card [constraint_threshold]
+$ ./SCMD-propagator/target/pack/bin/run ME-F --bdd-file [OBDD_File] --max-card [constraint_threshold] --verbose
 ```
 
 ## More information
