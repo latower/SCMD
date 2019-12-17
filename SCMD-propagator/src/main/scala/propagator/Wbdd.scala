@@ -1,3 +1,19 @@
+/**
+  * ----------------------------------------------------------------------------
+  * SCMD : Stochastic Constraint on Monotonic Distributions
+  *
+  * @author Behrouz Babaki behrouz.babaki@polymtl.ca
+  * @author Siegfried Nijssen siegfried.nijssen@uclouvain.be
+  * @author Anna Louise Latour a.l.d.latour@liacs.leidenuniv.nl
+  * @version 1.2 (17 December 2019)
+  *         
+  *         Relevant paper: Stochastic Constraint Propagation for Mining 
+  *         Probabilistic Networks, IJCAI 2019
+  *
+  *         Licensed under MIT (https://github.com/latower/SCMD/blob/master/LICENSE_SCMD).
+  * ----------------------------------------------------------------------------
+  */
+
 package propagator
 
 import scala.io.Source
