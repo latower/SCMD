@@ -449,7 +449,7 @@ class WbddConstraintPartial(val bdd: Wbdd, val X: Array[CPBoolVar],
         freeIn(a).decr
         val (isDecision, cpVarIndex) = bdd.getCpVarIndexForBddNode(a)
         if (!(isDecision && isRecentlyBound(cpVarIndex))) {
-        // if (!S.contains(a)) {
+//         if (!S.contains(a)) {
           enqueueIfProp(a)
         }
       }
@@ -459,7 +459,7 @@ class WbddConstraintPartial(val bdd: Wbdd, val X: Array[CPBoolVar],
         reachable(i).decr
         val (isDecision, cpVarIndex) = bdd.getCpVarIndexForBddNode(i)
         if (!(isDecision && isRecentlyBound(cpVarIndex))) {
-        // if (!S.contains(i)) {
+//         if (!S.contains(i)) {
           enqueueIfProp(i)
         }
       }

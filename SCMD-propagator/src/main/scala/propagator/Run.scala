@@ -35,7 +35,7 @@ object Run extends App {
     choice match {
       case "ME-F"  => RunnerMaxExpFull.main(arguments)
       case "ME-P"  => RunnerMaxExpPartial.main(arguments)
-      case "MC-P"  => RunnerMinCard.main(arguments)
+//       case "MC-P"  => RunnerMinCard.main(arguments)
 //       case "FIM" => RunnerMaxExpFim.main(arguments)
       case _     => printUsage
     }
@@ -43,5 +43,5 @@ object Run extends App {
     case _: java.lang.ArrayIndexOutOfBoundsException => printUsage
   }
 
-  def printUsage(): Unit = { println("Usage: Run <ME/MC/FIM> ARGUMENTS") }
+  def printUsage(): Unit = { println("Usage: Run <ME-F/ME-P/FIM> ARGUMENTS") }
 }

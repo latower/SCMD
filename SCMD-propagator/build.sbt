@@ -1,6 +1,6 @@
 // import Dependencies._
 
-ThisBuild / version := "0.1"
+ThisBuild / version := "1.2"
 ThisBuild / scalaVersion := "2.12.4"
 ThisBuild / target := file("SCMDpropagator")
 

@@ -112,6 +112,10 @@ object RunnerMaxExpPartial extends App with CPModel {
           "derivative-zero", "derivative-one",
           "bottom-zero", "bottom-one") contains x) success else failure("unknown <heuristic>")
       } text ("variable/value selection heuristic [top-zero, top-one, derivative-zero, derivative-one, bottom-zero, bottom-one], default: top-zero")
+      
+      opt[Unit]("verbose") abbr ("v") action { (_, c) =>
+        c.copy(verbose = true)
+      } text ("output all result with every details")
 
       help("help") text ("Usage")
 
