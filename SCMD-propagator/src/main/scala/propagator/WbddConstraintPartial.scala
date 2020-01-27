@@ -27,6 +27,7 @@ import scala.math.abs
 import oscar.algo.Inconsistency
 import oscar.algo.reversible.ReversibleDouble
 import oscar.algo.reversible.ReversibleInt
+import oscar.algo.reversible.ReversibleSparseSet
 import oscar.cp.core.CPPropagStrength
 import oscar.cp.core.Constraint
 import oscar.cp.core.variables.CPBoolVar
@@ -42,13 +43,14 @@ class WbddConstraintPartial(val bdd: Wbdd, val X: Array[CPBoolVar],
   }
   import QueueOrdering._
 
+  val watch = Array.fill[Boolean](bdd.numberOfNodes)(false)
+  
   class UniquePriorityQueue(ord: QueueOrdering) {
     val ord_ = ord match {
       case Upwards   => bdd.UpwardOrdering
       case Downwards => bdd.DownwardOrdering
     }
     val U: PriorityQueue[Int] = PriorityQueue.empty[Int](ord_)
-    val watch = Array.fill[Boolean](bdd.numberOfNodes)(false)
 
     def isEmpty = U.isEmpty
 
@@ -73,6 +75,9 @@ class WbddConstraintPartial(val bdd: Wbdd, val X: Array[CPBoolVar],
     }
 
   }
+  
+  val U = new UniquePriorityQueue(Upwards)
+  val Q = new UniquePriorityQueue(Downwards)
 
   override def associatedVars(): Iterable[CPVar] = X
 
@@ -89,8 +94,8 @@ class WbddConstraintPartial(val bdd: Wbdd, val X: Array[CPBoolVar],
   private[this] val freeVariableOffset: ReversibleInt = new ReversibleInt(s, bdd.numberOfMaxVars)
 
   private[this] val isRecentlyBound = Array.fill[Boolean](bdd.numberOfMaxVars)(false)
-  private[this] val isBoundByPropagation = Array.fill[Boolean](bdd.numberOfMaxVars)(false)
 
+  private[this] val freeIndices: ReversibleSparseSet = new ReversibleSparseSet(s, 0, bdd.numberOfMaxVars - 1)
   private[this] var recentlyBoundIndices = Array.fill[Int](bdd.numberOfMaxVars)(-1)
   private[this] var recentlyBoundIndicesOffset: Int = -1
   private[this] var nodesForFixedVars = Array[Int]()
@@ -296,6 +301,7 @@ class WbddConstraintPartial(val bdd: Wbdd, val X: Array[CPBoolVar],
 
     while (i < k) {
       if (X(freeAndBoundIndices(i)).isBound) {
+        freeIndices.removeValue(freeAndBoundIndices(i))
         val temp = freeAndBoundIndices(i)
         freeAndBoundIndices(i) = freeAndBoundIndices(k - 1)
         freeAndBoundIndices(k - 1) = temp
@@ -312,12 +318,24 @@ class WbddConstraintPartial(val bdd: Wbdd, val X: Array[CPBoolVar],
   }
 
   def updateNodeValues(): Double = {
-    val U = new UniquePriorityQueue(Upwards)
     var d: Double = 0.0
     var newValue: Double = 0.0
 
-    nodesForFixedVars.filter(reachable(_).getValue > 0).foreach(U.enqueue)
-
+    // Only add reachable decision nodes labelled with variables that have just
+    // been set to False to the queue
+    var j: Int = 0
+    while (j < recentlyBoundIndicesOffset) {
+      val i = recentlyBoundIndices(j)
+      if (X(i).isFalse) {
+        for (r <- bdd.getBddNodesForCpVarIndex(i)) {
+          if (reachable(r).getValue > 0) {
+            U.enqueue(r)
+          }
+        }
+      }
+      j += 1
+    }
+  
     while (!U.isEmpty) {
       val r = U.dequeue
       val oldValue = getNodeValue(r)
@@ -326,37 +344,41 @@ class WbddConstraintPartial(val bdd: Wbdd, val X: Array[CPBoolVar],
         newValue = getNodeValue(activeChild(r))
         if (isRecentlyBound(cpVar) && X(cpVar).isFalse)
           d += pathWeights(r).getValue * (newValue - getNodeValue(hiChild(r)))
-      } else
+      } else {
         newValue = getNodePositiveWeight(r) * getNodeValue(hiChild(r)) +
           getNodeNegativeWeight(r) * getNodeValue(loChild(r))
-
-      if (newValue != oldValue) {
-        nodeValues(r) += (newValue - oldValue)
+      }
+      // New value can only be lower. If it is indeed lower, propagate this
+      // change upwards
+      if (newValue < oldValue) {
+        nodeValues(r).setValue(newValue)
         for (p <- bdd.parents(r)) {
-          if (!removed(p, r))
-            U.enqueueRelevant(p)
+          if (!removed(p, r)) {
+              U.enqueueRelevant(p)
+            }
+          }
         }
       }
-    }
     d
   }
 
   def updatePathWeights(): Unit = {
-    val U = new UniquePriorityQueue(Downwards)
-
     var j: Int = 0
     while (j < recentlyBoundIndicesOffset) {
       val i = recentlyBoundIndices(j)
-      for (r <- bdd.getBddNodesForCpVarIndex(i))
-        if (X(i).isFalse && reachable(r).getValue > 0) {
-          U.enqueue(hiChild(r))
-          U.enqueue(loChild(r))
+      if (X(i).isFalse) {
+        for (r <- bdd.getBddNodesForCpVarIndex(i)) {
+          if (reachable(r).getValue > 0) {
+            Q.enqueue(hiChild(r))
+            Q.enqueue(loChild(r))
+          }
         }
+      }
       j += 1
     }
 
-    while (!U.isEmpty) {
-      val r = U.dequeue
+    while (!Q.isEmpty) {
+      val r = Q.dequeue
       val oldValue = pathWeights(r).getValue
       var newValue = 0.0
       if (bdd.roots.contains(r))
@@ -381,51 +403,76 @@ class WbddConstraintPartial(val bdd: Wbdd, val X: Array[CPBoolVar],
         pathWeights(r).setValue(newValue)
         val (isDecision, cpVar) = bdd.getCpVarIndexForBddNode(r)
         if (!isDecision) {
-          U.enqueueRelevant(hiChild(r))
-          U.enqueueRelevant(loChild(r))
+          Q.enqueueRelevant(hiChild(r))
+          Q.enqueueRelevant(loChild(r))
         } else {
-          U.enqueueRelevant(activeChild(r))
+          Q.enqueueRelevant(activeChild(r))
         }
       }
     }
   }
 
   def updateFreeOut(): Unit = {
-    val U = new UniquePriorityQueue(Upwards)
-    val watch = Array.fill[Boolean](bdd.numberOfNodes)(false)
-
-    nodesForFixedVars.filter(n => reachable(n).getValue > 0 && freeIn(n).getValue > 0).foreach(U.enqueue)
+    val S = nodesForFixedVars.filter(n => reachable(n).getValue > 0 && freeIn(n).getValue > 0)
+    
+    def updateAndEqueueParents(r: Int): Unit = {
+      for (p <- bdd.parents(r)) {
+        if (!removed(p, r) && relevant(p)) {
+          freeOut(p).decr
+          // Only enqueue parents if their FreeOut counter is now 0
+          if (freeOut(p).getValue == 0) {
+            val (isDecision, cpVarIndex) = bdd.getCpVarIndexForBddNode(p)
+            if (!(isDecision && isRecentlyBound(cpVarIndex))) {
+              U.enqueue(p)
+            }
+          }
+        }
+      }
+    }
+    
+    // First, loop over the nodes whose decision variables have just been fixed
+    // to determine which parents of those nodes need to be enqueued to be
+    // updated
+    for (r <- S) {
+      // If the FreeOut counter of this decision node was 0 to begin with, its
+      // parents' counters will have to be decreased
+      if (freeOut(r).getValue == 0) {
+        updateAndEqueueParents(r)
+      } 
+      // Otherwise, we check if the new situation requires us to update the
+      // parents:
+      else {
+        val c = activeChild(r)
+        // If the active child is not a leaf, we check what the new value of the
+        // FreeOut counter is, and add parents if necessary
+        if (c >= 0) {
+          val (childIsDecision, childCpVarIndex) = bdd.getCpVarIndexForBddNode(c)
+          if (freeOut(c).getValue > 0 || (childIsDecision && !X(childCpVarIndex).isBound)) {
+            freeOut(r).setValue(1)
+          } else {
+            freeOut(r).setValue(0)
+            updateAndEqueueParents(r)
+          }
+        } 
+        // If the active child is a leaf, the current node has a FreeOut counter
+        // of 0, and we know that we must update the parent.
+        else {
+          freeOut(r).setValue(0)
+          updateAndEqueueParents(r)
+        }
+      }
+    }
 
     while (!U.isEmpty) {
       val r = U.dequeue
       val (isDecision, cpVarIndex) = bdd.getCpVarIndexForBddNode(r)
-      if (isDecision && isRecentlyBound(cpVarIndex)) {
-        val c = activeChild(r)
-        if (c >= 0) {
-          val (childIsDecision, childCpVarIndex) = bdd.getCpVarIndexForBddNode(c)
-          if (freeOut(c).getValue > 0 || (childIsDecision && !X(childCpVarIndex).isBound))
-            freeOut(r).setValue(1)
-          else
-            freeOut(r).setValue(0)
-        } else
-          freeOut(r).setValue(0)
-        //         if (c >= 0 && (freeOut(c).getValue > 0 || (c >= 0 && childIsDecision && !X(childCpVarIndex).isBound)) )
-        //           freeOut(r).setValue(1)
-        //         else
-        //           freeOut(r).setValue(0)
+      if (!isDecision || X(cpVarIndex).isBound) {
+        updateAndEqueueParents(r)
       }
-
-      if (freeOut(r).getValue == 0 && (!isDecision || X(cpVarIndex).isBound))
-        for (p <- bdd.parents(r))
-          if (!removed(p, r) && relevant(p)) {
-            freeOut(p).decr
-            U.enqueue(p)
-          }
     }
   }
 
   def updateReachableFreeIn(): Unit = {
-    val Q = new UniquePriorityQueue(Downwards)
 
     def enqueueIfProp(r: Int): Unit = {
       if (freeOut(r).getValue > 0 &&
@@ -515,11 +562,10 @@ class WbddConstraintPartial(val bdd: Wbdd, val X: Array[CPBoolVar],
       return // No variable has been initialized since the last call
 
     var i = 0
-    while (i < X.length) {
-      isRecentlyBound(i) = false
-      isBoundByPropagation(i) = false
-      i += 1
-    }
+//     while (i < X.length) {
+//       isRecentlyBound(i) = false
+//       i += 1
+//     }
 
     i = 0
     while (i < recentlyBoundIndicesOffset) {
@@ -535,21 +581,33 @@ class WbddConstraintPartial(val bdd: Wbdd, val X: Array[CPBoolVar],
 
     updatePathWeights
     computeDerivatives
-
-    i = 0
-    while (i < bdd.numberOfMaxVars) {
-      if (!X(i).isBound && (totalValue_ + derivatives(i) <= bound)) {
-        X(i).assignTrue
-        isBoundByPropagation(i) = true
+    
+    for (v_idx <- freeIndices.iterator) {
+      if (totalValue_ + derivatives(v_idx) <= bound) {
+        X(v_idx).assignTrue
+        freeIndices.removeValue(v_idx)
       }
-      i += 1
     }
+    
+//     i = 0
+//     while (i < bdd.numberOfMaxVars) {
+//       if (!X(i).isBound && (totalValue_ + derivatives(i) <= bound)) {
+//         X(i).assignTrue
+//       }
+//       i += 1
+//     }
     totalValue.setValue(totalValue_)
 
     val k2 = updateRecentFixes
     updateReachableFreeIn
     updateFreeOut
     freeVariableOffset.setValue(k2)
-
+    
+    i = 0
+    while (i < recentlyBoundIndicesOffset) {
+      isRecentlyBound(recentlyBoundIndices(i)) = false
+      i += 1
+    }
+    
   }
 }
