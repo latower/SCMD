@@ -26,7 +26,8 @@ case class Config(
   minexp:           Double  = 0.0,
   maxcard:          Int     = 0,
   verbose:          Boolean = false,
-  branching:        String  = "top-zero") 
+  branching:        String  = "top-zero",
+  heuristicFile:	File	= new File(".")) 
 
 object Run extends App {
   try {
