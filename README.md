@@ -77,7 +77,7 @@ To use our partial-sweep SCMD propagator to solve an ME problem setting for whic
 ```
 $ ./SCMD-propagator/target/pack/bin/run ME-P --bdd-file [OBDD_file] --max-card [constraint_threshold] --branching [heuristic] --heuristic-file [heuristic_file] --verbose
 ```
-Here, [heuristic_file] needs to be obtained through preprocessing. It contains the decision variables in a problem, sorted according to a value (i.e. degree or betweenness) in the order in which we want to branch on those decision variables, one decision variable per line.
+Here, `[heuristic_file]` needs to be obtained through pre-processing, and is only required if combined with a branching heuristic that requires pre-processing. It contains the decision variables in a problem, sorted according to a value (i.e. degree or betweenness) in the order in which we want to branch on those decision variables, one decision variable per line.
 
 <!--- 
 We have less support for the `MC` problem setting: 
