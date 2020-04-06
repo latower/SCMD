@@ -5,7 +5,8 @@
 	* @author Behrouz Babaki behrouz.babaki@polymtl.ca
 	* @author Siegfried Nijssen siegfried.nijssen@uclouvain.be
 	* @author Anna Louise Latour a.l.d.latour@liacs.leidenuniv.nl
-	* @version 1.2 (17 December 2019)
+    * @author Daniël Fokkinga
+    * @version 1.3 (6 April 2020)
 	*				 
 	*				 Relevant paper: Stochastic Constraint Propagation for Mining 
 	*				 Probabilistic Networks, IJCAI 2019
